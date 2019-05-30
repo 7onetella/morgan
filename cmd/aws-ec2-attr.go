@@ -59,3 +59,20 @@ $ attr nginx privateip
 func init() {
 	ec2Cmd.AddCommand(ec2AttrCmd)
 }
+
+// We can create a bash script called aws-ssh with the content like the following to automate ssh connection call
+
+/*
+#!/bin/sh
+
+name=$1
+
+keyname=$(morgan aws ec2 attr $name keyname)
+privateip=$(morgan aws ec2 attr $name privateip)
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ~/.aws/${keyname}.pem ubuntu@${privateip}
+
+if [ "$?" != "0" ]; then
+  ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ~/.aws/${keyname}.pem ec2-user@${privateip}
+fi
+*/
