@@ -36,15 +36,16 @@ var userDeleteCmd = &cobra.Command{
 	Example: "delete smithj",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		lc := readLdapConfig()
+		cfg := readLdapConfig()
+		ldap := LDAP{cfg}
 
 		uid := args[0]
 
 		ldapEntry := LdapEntry{
-			Dn: fmt.Sprintf(lc.Dn, uid),
+			Dn: fmt.Sprintf(cfg.Dn, uid),
 		}
 
-		attributes, _, _ := findLdapUser(lc, uid)
+		attributes, _, _ := ldap.findLdapUser(uid)
 		if attributes == nil {
 			Info("attributes: " + fmt.Sprintf("%+v", attributes))
 			Failure("user does not exists")
@@ -54,10 +55,7 @@ var userDeleteCmd = &cobra.Command{
 		path, err := createLDIF(applyTemplate(ldapEntry, ldifDelteTemplate))
 		ExitOnError(err, "creating temporary ldif file")
 
-		cmds := []string{"ldapdelete", "-h", lc.Host, "-p", lc.Port, "-D", lc.AdminDn, "-w", lc.AdminPwd, "-f", path}
-		// Debug(strings.Join(cmds, " "))
-
-		executeLdapCmd("deleting user", cmds)
+		ldap.do("ldapdelete", "deleting user", path)
 
 		cleanUpLDIF(path)
 

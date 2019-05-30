@@ -125,24 +125,46 @@ func cleanUpLDIF(path string) {
 	ExitOnError(err, "removing temporary ldif file")
 }
 
+// deprecated. use ldapCreate or ldapModify instead
 func executeLdapCmd(msg string, cmds []string) {
 	stdout, errout, err := execw.Exec(cmds)
 	ExitOnErrorWithDetail(err, msg, stdout, errout)
 }
 
-func findLdapUser(lc LdapConfig, uid string) (map[string]string, []string, error) {
-	port, _ := strconv.Atoi(lc.Port)
+// LDAP handles various ldap operations
+type LDAP struct {
+	cfg LdapConfig
+}
+
+// NewLDAP constructor
+func NewLDAP(cfg LdapConfig) LDAP {
+	return LDAP{cfg}
+}
+
+func (l LDAP) do(cmd, msg string, path string) {
+	cfg := l.cfg
+	cmds := []string{cmd, "-h", cfg.Host, "-p", l.cfg.Port, "-D", cfg.AdminDn, "-w", cfg.AdminPwd, "-f", path}
+	argsmasked := []string{cmd, "-h", cfg.Host, "-p", cfg.Port, "-D", "*****", "-w", "*****", "-f", path}
+	Info(strings.Join(argsmasked, " "))
+
+	stdout, errout, err := execw.Exec(cmds)
+	ExitOnErrorWithDetail(err, msg, stdout, errout)
+}
+
+func (l LDAP) findLdapUser(uid string) (map[string]string, []string, error) {
+	cfg := l.cfg
+	port, _ := strconv.Atoi(cfg.Port)
 
 	client := &LDAPClient{
-		Base:         lc.Base,
-		Host:         lc.Host,
+		Base:         cfg.Base,
+		Host:         cfg.Host,
 		Port:         port,
 		UseSSL:       false,
-		BindDN:       lc.AdminDn,
-		BindPassword: lc.AdminPwd,
-		UserFilter:   lc.User,
-		GroupFilter:  lc.Group,
-		Attributes:   strings.Split(lc.Attributes, ","),
+		BindDN:       cfg.AdminDn,
+		BindPassword: cfg.AdminPwd,
+		UserFilter:   cfg.User,
+		GroupFilter:  cfg.Group,
+		Attributes:   strings.Split(cfg.Attributes, ","),
 	}
 	// It is the responsibility of the caller to close the connection
 	defer client.Close()
@@ -160,19 +182,20 @@ func findLdapUser(lc LdapConfig, uid string) (map[string]string, []string, error
 	return user, groups, nil
 }
 
-func findLdapUsers(lc LdapConfig, filter string) ([]map[string]string, error) {
-	port, _ := strconv.Atoi(lc.Port)
+func (l LDAP) findUsers(filter string) ([]map[string]string, error) {
+	cfg := l.cfg
+	port, _ := strconv.Atoi(cfg.Port)
 
 	client := &LDAPClient{
-		Base:         lc.Base,
-		Host:         lc.Host,
+		Base:         cfg.Base,
+		Host:         cfg.Host,
 		Port:         port,
 		UseSSL:       false,
-		BindDN:       lc.AdminDn,
-		BindPassword: lc.AdminPwd,
-		UserFilter:   lc.User,
-		GroupFilter:  lc.Group,
-		Attributes:   strings.Split(lc.Attributes, ","),
+		BindDN:       cfg.AdminDn,
+		BindPassword: cfg.AdminPwd,
+		UserFilter:   cfg.User,
+		GroupFilter:  cfg.Group,
+		Attributes:   strings.Split(cfg.Attributes, ","),
 	}
 	// It is the responsibility of the caller to close the connection
 	defer client.Close()

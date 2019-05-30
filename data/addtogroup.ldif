@@ -1,0 +1,4 @@
+dn: cn=managers,ou=groups,dc=example,dc=com
+changetype: modify
+add: uniqueMember
+uniqueMember: uid=smithj,ou=people,dc=example,dc=com

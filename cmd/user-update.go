@@ -44,6 +44,7 @@ var userUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		lc := readLdapConfig()
+		ldap := NewLDAP(lc)
 
 		uid := args[0]
 
@@ -52,7 +53,7 @@ var userUpdateCmd = &cobra.Command{
 			HomePhone: userUpdateCmdHomePhone,
 		}
 
-		attributes, _, _ := findLdapUser(lc, uid)
+		attributes, _, _ := ldap.findLdapUser(uid)
 		if attributes == nil {
 			Info("attributes: " + fmt.Sprintf("%+v", attributes))
 			Failure("user does not exists")

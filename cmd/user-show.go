@@ -42,11 +42,12 @@ var userShowCmd = &cobra.Command{
 	Example: "show smithj",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		lc := readLdapConfig()
+		cfg := readLdapConfig()
+		ldap := LDAP{cfg}
 
 		uid := args[0]
 
-		attributes, groups, _ := findLdapUser(lc, uid)
+		attributes, groups, _ := ldap.findLdapUser(uid)
 		if attributes == nil {
 			Failure("user does not exists")
 			return
