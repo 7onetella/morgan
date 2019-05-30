@@ -142,22 +142,30 @@ func CheckArgs(args []string, minimum int) {
 }
 
 // ExitOnError exits when error occurs
-func ExitOnError(err error, msg string) {
+func ExitOnError(err error, action string) {
 	if err != nil {
-		Println(red(indentation + xmark + msg))
+		Println(red(indentation + xmark + action))
 		os.Exit(1)
 	}
 
 	// if there is no error but debug is set
 	if logLevel >= DEBUG {
-		Success(msg)
+		Success(action)
+	}
+}
+
+// ExitOn exits when error occurs
+func ExitOn(err error) {
+	if err != nil {
+		Println(red(indentation + xmark + err.Error()))
+		os.Exit(1)
 	}
 }
 
 // ExitOnErrorWithDetail exits when error occurs, prints addtional info
-func ExitOnErrorWithDetail(err error, msg, stdout, errout string) {
+func ExitOnErrorWithDetail(err error, action, stdout, errout string) {
 	if err != nil {
-		Println(red(indentation + xmark + msg))
+		Println(red(indentation + xmark + action))
 		// if there is no error but debug is set
 
 		if logLevel == DEBUG {
@@ -170,7 +178,7 @@ func ExitOnErrorWithDetail(err error, msg, stdout, errout string) {
 	}
 
 	if logLevel >= DEBUG {
-		Success(msg)
+		Success(action)
 	}
 }
 
