@@ -28,12 +28,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ec2StartCmd represents the start command
-var ec2StartCmd = &cobra.Command{
-	Use:     "start <instance names>",
-	Short:   "Starts ec2",
-	Long:    `Starts ec2`,
-	Example: "start nginx redis",
+// ec2StopCmd represents the start command
+var ec2StopCmd = &cobra.Command{
+	Use:     "stop <instance names>",
+	Short:   "Stops ec2",
+	Long:    `Stops ec2`,
+	Example: "stop nginx redis",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -47,13 +47,13 @@ var ec2StartCmd = &cobra.Command{
 			names[instanceIDs[i]] = name
 		}
 
-		resp, err := ec2w.StartInstances(instanceIDs)
+		resp, err := ec2w.StopInstances(instanceIDs)
 		ExitOn(err)
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"Name", "Instance ID", "Prev", "Current"})
 
-		for _, c := range resp.StartingInstances {
+		for _, c := range resp.StoppingInstances {
 			table.Append([]string{names[*c.InstanceId], *c.InstanceId, string(c.PreviousState.Name), string(c.CurrentState.Name)})
 		}
 		table.Render()
@@ -61,5 +61,5 @@ var ec2StartCmd = &cobra.Command{
 }
 
 func init() {
-	ec2Cmd.AddCommand(ec2StartCmd)
+	ec2Cmd.AddCommand(ec2StopCmd)
 }
