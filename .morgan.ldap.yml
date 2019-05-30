@@ -10,4 +10,4 @@ binddn: uid=admin,ou=system
 bindpwd: secret
 dn: uid=%s,ou=people,dc=example,dc=com
 password: bar
-attributes: sn,uid,cn,homePhone
+attributes: sn,uid,cn,homePhone,mail

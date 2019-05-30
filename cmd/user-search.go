@@ -23,8 +23,9 @@ package cmd
 // SOFTWARE.
 
 import (
-	"fmt"
+	"os"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -34,21 +35,27 @@ var userSearchCmd = &cobra.Command{
 	Example: `search "John Smith"`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		lc := readLdapConfig()
+		cfg := readLdapConfig()
+		ldap := LDAP{cfg}
 
 		filter := args[0]
 
-		users, _ := findLdapUsers(lc, "*"+filter+"*")
-		if users == nil {
-			Failure("users empty")
+		users, _ := ldap.findUsers("*" + filter + "*")
+		if users == nil || len(users) == 0 {
+			Println("  \u2022 search result empty")
 			return
 		}
 
 		//Log(fmt.Sprintf("%+v", attributes))
 		Print("\n")
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Name", "Home#", "Email"})
+
 		for _, user := range users {
-			Log(fmt.Sprintf("%-20s: %s", "Full Name", user["cn"]))
+			table.Append([]string{user["cn"], user["homePhone"], user["mail"]})
 		}
+		table.Render() // Send output
 	},
 }
 
