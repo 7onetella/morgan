@@ -53,15 +53,22 @@ var userCreateCmd = &cobra.Command{
 	Example: "create",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		lc := readLdapConfig()
+		cfg := readLdapConfig()
+		ldap := NewLDAP(cfg)
 
 		uid := strings.ToLower(userCreateCmdLast) + strings.ToLower(userCreateCmdFirst)[0:1]
-
-		passwordHash, err := ssha.Encode([]byte(lc.Password))
+		passwordHash, err := ssha.Encode([]byte(cfg.Password))
 		ExitOnError(err, "hashing password")
 
+		// clean up slack home phone formatting. e.g. <tel:777-555-1234|777-555-1234>
+		if strings.Contains(userCreateCmdHomePhone, "|") {
+			p := strings.Split(userCreateCmdHomePhone, "|")[1]
+			p = strings.Replace(p, ">", "", 1)
+			userCreateCmdHomePhone = p
+		}
+
 		ldapEntry := LdapEntry{
-			Dn:           fmt.Sprintf(lc.Dn, uid),
+			Dn:           fmt.Sprintf(cfg.Dn, uid),
 			Cn:           userCreateCmdFirst + " " + userCreateCmdLast,
 			Sn:           userCreateCmdLast,
 			UID:          uid,
@@ -69,7 +76,7 @@ var userCreateCmd = &cobra.Command{
 			UserPassword: string(passwordHash),
 		}
 
-		attributes, _, _ := findLdapUser(lc, uid)
+		attributes, _, _ := ldap.findLdapUser(uid)
 		if attributes != nil {
 			Info("attributes: " + fmt.Sprintf("%+v", attributes))
 			Failure("user already exists")
@@ -79,11 +86,7 @@ var userCreateCmd = &cobra.Command{
 		path, err := createLDIF(applyTemplate(ldapEntry, ldifCreateTemplate))
 		ExitOnError(err, "creating temporary ldif file")
 
-		cmds := []string{"ldapadd", "-h", lc.Host, "-p", lc.Port, "-D", lc.AdminDn, "-w", lc.AdminPwd, "-f", path}
-		argsmasked := []string{"ldapadd", "-h", lc.Host, "-p", lc.Port, "-D", "*****", "-w", "*****", "-f", path}
-		Info(strings.Join(argsmasked, " "))
-
-		executeLdapCmd("creating user", cmds)
+		ldap.do("ldapadd", "creating user", path)
 
 		cleanUpLDIF(path)
 
