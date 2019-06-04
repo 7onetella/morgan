@@ -21,28 +21,28 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
+	"strings"
+
+	"github.com/7onetella/morgan/tools/awsapi/route53"
+	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/7onetella/morgan/tools/awsapi/ec2w"
 	"github.com/spf13/cobra"
 )
 
-// ec2StopCmd represents the start command
-var ec2AttrCmd = &cobra.Command{
-	Use:   "attr <instance name> <keyname|privateip>",
-	Short: "Display ec2 instance attribute value",
-	Long:  `Display ec2 instance attribute value`,
-	Example: `$ attr nginx keyname
-my_ec2_pem_keyname
-
-$ attr nginx privateip
-172.31.10.53
-`,
-	Args: cobra.MinimumNArgs(2),
+// dnsUpdateCmd represents the dns update command
+var dnsUpdateCmd = &cobra.Command{
+	Use:     "update <instance name> <A record name>",
+	Short:   "Updates dns record",
+	Long:    `Display dns record`,
+	Example: `$`,
+	Args:    cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		instanceName := args[0]
+		dnsARecord := args[1]
+
 		resp, err := ec2w.DescribeInstanceByNameTag(instanceName)
 		ExitOn(err)
 
@@ -51,41 +51,31 @@ $ attr nginx privateip
 			os.Exit(1)
 		}
 
-		attr := args[1]
+		privateIP := *resp.Reservations[0].Instances[0].PrivateIpAddress
 
-		switch attr {
-		case "keyname":
-			fmt.Print(*resp.Reservations[0].Instances[0].KeyName)
-		case "privateip":
-			fmt.Print(*resp.Reservations[0].Instances[0].PrivateIpAddress)
+		zresp, err := route53.ListHostedZones()
+		ExitOn(err)
+
+		terms := strings.Split(dnsARecord, ".")
+		tSize := len(terms)
+		rootDomain := terms[tSize-2] + "." + terms[tSize-1] + "."
+
+		var hostedZoneID string
+		for _, zone := range zresp.HostedZones {
+			if *zone.Name == rootDomain {
+				s := aws.StringValue(zone.Id)
+				i := strings.LastIndex(s, "/")
+				hostedZoneID = s[i+1:]
+				break
+			}
 		}
+
+		_, err = route53.ARecordUpsert(dnsARecord, privateIP, hostedZoneID)
+		ExitOnError(err, "Updating A Record")
 
 	},
 }
 
 func init() {
-	ec2Cmd.AddCommand(ec2AttrCmd)
+	dnsCmd.AddCommand(dnsUpdateCmd)
 }
-
-// We can create a bash script called aws-ssh with the content like the following to automate ssh connection call
-
-/*
-#!/bin/sh
-
-name=$1
-
-keyname=$(morgan aws ec2 attr $name keyname)
-if [ "$?" != "0" ]; then
-   echo
-   echo ${keyname}
-   echo
-   exit 1
-fi
-privateip=$(morgan aws ec2 attr $name privateip)
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ~/.aws/${keyname}.pem ubuntu@${privateip}
-
-if [ "$?" != "0" ]; then
-  ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ~/.aws/${keyname}.pem ec2-user@${privateip}
-fi
-*/

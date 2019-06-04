@@ -145,6 +145,10 @@ func CheckArgs(args []string, minimum int) {
 func ExitOnError(err error, action string) {
 	if err != nil {
 		Println(red(indentation + xmark + action))
+		if logLevel == DEBUG {
+			Print("\n")
+			IndentRed(err.Error())
+		}
 		os.Exit(1)
 	}
 
@@ -166,17 +170,15 @@ func ExitOn(err error) {
 func ExitOnErrorWithDetail(err error, action, stdout, errout string) {
 	if err != nil {
 		Println(red(indentation + xmark + action))
-		// if there is no error but debug is set
-
 		if logLevel == DEBUG {
 			Print("\n")
 			IndentRed(stdout)
 			IndentRed(errout)
 		}
-
 		os.Exit(1)
 	}
 
+	// if there is no error but debug is set
 	if logLevel >= DEBUG {
 		Success(action)
 	}
