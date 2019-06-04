@@ -73,6 +73,7 @@ var dnsUpdateCmd = &cobra.Command{
 		_, err = route53.ARecordUpsert(dnsARecord, privateIP, hostedZoneID)
 		ExitOnError(err, "Updating A Record")
 
+		Success("Updating A Record")
 	},
 }
 
