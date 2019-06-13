@@ -24,12 +24,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var awsCmd = &cobra.Command{
-	Use:   "aws",
-	Short: "automation for AWS",
-	Long:  `automation for AWS`,
+var ecsCmd = &cobra.Command{
+	Use:   "ecs",
+	Short: "automation for ecs",
+	Long:  `automation for ecs`,
 }
 
 func init() {
-	rootCmd.AddCommand(awsCmd)
+	awsCmd.AddCommand(ecsCmd)
 }

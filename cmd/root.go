@@ -72,6 +72,7 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	UpdateExampleOnChildren(rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -153,15 +154,21 @@ func ExitOnError(err error, action string) {
 	}
 
 	// if there is no error but debug is set
+	// this may not sound right but we need to show what actions were successful
+	// before showing the error from the action that failed at the end
 	if logLevel >= DEBUG {
-		Success(action)
+		Println(green(indentation + checkmark + action))
 	}
 }
 
 // ExitOn exits when error occurs
 func ExitOn(err error) {
 	if err != nil {
-		Println(red(indentation + xmark + err.Error()))
+		Println(red(indentation + xmark))
+		if logLevel == DEBUG {
+			Print("\n")
+			IndentRed(err.Error())
+		}
 		os.Exit(1)
 	}
 }
@@ -179,14 +186,18 @@ func ExitOnErrorWithDetail(err error, action, stdout, errout string) {
 	}
 
 	// if there is no error but debug is set
+	// this may not sound right but we need to show what actions were successful
+	// before showing the error from the action that failed at the end
 	if logLevel >= DEBUG {
-		Success(action)
+		Println(green(indentation + checkmark + action))
 	}
 }
 
 // Success prints green with checkmark preceding the message
 func Success(msg string) {
-	Println(green(indentation + checkmark + msg))
+	if logLevel != DEBUG {
+		Println(green(indentation + checkmark + msg))
+	}
 }
 
 // IndentRed prints red with indentation
@@ -316,4 +327,33 @@ func magenta(msg string) string {
 
 func cyan(msg string) string {
 	return colorString(msg, "cyan")
+}
+
+// RecursiveName travels up the parent chain to retrieve name
+func RecursiveName(cmd *cobra.Command) string {
+
+	if cmd.HasParent() {
+		return RecursiveName(cmd.Parent()) + " " + cmd.Name()
+	}
+
+	return cmd.Name()
+}
+
+// UpdateExampleOnChildren updates children's example using parent name recursively
+func UpdateExampleOnChildren(currCmd *cobra.Command) {
+
+	if currCmd.HasSubCommands() {
+		for _, c := range currCmd.Commands() {
+			UpdateExampleOnChildren(c)
+		}
+	}
+
+	if currCmd.HasParent() {
+		currCmd.Example = "  " + RecursiveName(currCmd) + " " + currCmd.Example
+		return
+	}
+
+	if len(currCmd.Example) > 0 {
+		currCmd.Example = "  " + currCmd.Name() + " " + currCmd.Example
+	}
 }

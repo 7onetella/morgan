@@ -50,7 +50,7 @@ userPassword: {{.UserPassword}}`
 var userCreateCmd = &cobra.Command{
 	Use:     "create",
 	Short:   "Creates user",
-	Example: "create",
+	Example: "--first John --last Smith --home_phone 777-555-1234",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		cfg := readLdapConfig()
