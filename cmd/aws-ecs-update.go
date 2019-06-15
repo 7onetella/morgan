@@ -49,29 +49,9 @@ var ecsUpdateCmd = &cobra.Command{
 		clusters := map[string]string{}
 
 		if len(cluster) == 0 {
-			result, err := ecsw.ListClusters()
-			ExitOnError(err, "listing clusters")
-
-			for _, c := range result.ClusterArns {
-				result2, err := ecsw.DescribeClusters(c)
-				ExitOnError(err, "describing clusters")
-
-				for _, cdata := range result2.Clusters {
-					result3, err := ecsw.ListServices(*cdata.ClusterName)
-					ExitOnError(err, "listing services")
-
-					for _, s := range result3.ServiceArns {
-
-						i := strings.LastIndex(s, "/")
-						serviceName := s[i+1:]
-
-						if service == serviceName {
-							cluster = *cdata.ClusterName
-							clusters[cluster] = serviceName
-						}
-					}
-				}
-			}
+			var err error
+			clusters, err = ecsw.GetClustersForService(service)
+			ExitOnError(err, "getting clusters for service")
 		}
 
 		if len(clusters) > 1 {
