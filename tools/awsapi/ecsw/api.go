@@ -44,7 +44,7 @@ func ListClusters() (*ecs.ListClustersOutput, error) {
 	return req.Send(ctx)
 }
 
-// DescribeCluster describes ecs cluster
+// DescribeClusters describes ecs cluster
 func DescribeClusters(cluster string) (*ecs.DescribeClustersOutput, error) {
 	svc, err := newECS()
 	if err != nil {
