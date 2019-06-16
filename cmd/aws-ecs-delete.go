@@ -38,7 +38,7 @@ var ecsDeleteCmd = &cobra.Command{
 		cluster := ecsDeleteCmdCluster
 		service := args[0]
 
-		// if cluster is not specified, then use "default" cluster with any name
+		// if cluster is not specified, then assume there is only one cluster and use that cluster
 		if len(cluster) == 0 {
 			clusters := GetClustersForService(service)
 
@@ -71,6 +71,6 @@ func init() {
 
 	flags := ecsDeleteCmd.Flags()
 
-	flags.StringVar(&ecsDeleteCmdCluster, "cluster", "", "ecs cluster")
+	flags.StringVarP(&ecsDeleteCmdCluster, "cluster", "c", "", "ecs cluster")
 
 }

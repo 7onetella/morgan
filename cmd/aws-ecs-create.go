@@ -31,24 +31,31 @@ import (
 )
 
 var ecsCreateCmdCluster string
+var ecsCreateCmdService string
+var ecsCreateCmdTaskDefinition string
 var ecsCreateCmdDesiredCount int64
 var ecsCreateCmdTimeout int64
 
 var ecsCreateCmd = &cobra.Command{
-	Use:     "create <service name> <size> <port> <image>",
+	Use:     "create-service <service-name> <size> <port> <image>",
 	Short:   "Creates ecs",
 	Long:    `Creates ecs`,
 	Example: "foo-svc small 8080 7onetella/ref-api:latest",
+	Aliases: []string{"create"},
 	Args:    cobra.MinimumNArgs(4),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		cluster := ecsCreateCmdCluster
 		service := args[0]
-		// size := args[1]
+		if len(service) == 0 {
+			service = ecsCreateCmdService
+		}
+		size := args[1]
 		port, _ := strconv.Atoi(args[2])
 		image := args[3]
+		taskdef := ecsCreateCmdTaskDefinition
 
-		// if cluster is not specified, then use "default" cluster with any name
+		// if cluster is not specified, then assume there is only one cluster and use that cluster
 		if len(cluster) == 0 {
 			clusters := GetClustersForService(service)
 
@@ -57,30 +64,12 @@ var ecsCreateCmd = &cobra.Command{
 			cluster = GetClusterForService(clusters, service)
 		}
 
-		taskdef := &ecs.TaskDefinition{
-			ContainerDefinitions: []ecs.ContainerDefinition{
-				ecs.ContainerDefinition{
-					Name:              aws.String(service),
-					Cpu:               aws.Int64(128),
-					Memory:            aws.Int64(256),
-					MemoryReservation: aws.Int64(256),
-					PortMappings: []ecs.PortMapping{
-						ecs.PortMapping{
-							ContainerPort: aws.Int64(int64(port)),
-							HostPort:      aws.Int64(0),
-							Protocol:      "tcp",
-						},
-					},
-					Image: aws.String(image),
-				},
-			},
-			Family: aws.String(service),
+		if len(taskdef) == 0 {
+			cm := GetCPUAndMemory(size)
+			taskdef = RegisterNewTaskDefinition(cm.CPU, cm.Memory, int64(port), service, image)
 		}
 
-		result, err := ecsw.RegisterTaskDefinition(taskdef)
-		ExitOnError(err, "registering task definition")
-
-		_, err = ecsw.CreateService(cluster, service, *result.TaskDefinition.TaskDefinitionArn, ecsCreateCmdDesiredCount)
+		_, err := ecsw.CreateService(cluster, service, taskdef, ecsCreateCmdDesiredCount)
 		ExitOnError(err, "creating service")
 
 		err = ecsw.ServiceStable(cluster, service, ecsCreateCmdTimeout)
@@ -99,8 +88,60 @@ func init() {
 
 	flags.StringVarP(&ecsCreateCmdCluster, "cluster", "c", "", "ecs cluster")
 
+	flags.StringVarP(&ecsCreateCmdService, "service", "s", "", "service name")
+
+	flags.StringVar(&ecsCreateCmdTaskDefinition, "task-definition", "", "task definition")
+
 	flags.Int64Var(&ecsCreateCmdDesiredCount, "desired-count", 1, "desired count")
 
 	flags.Int64Var(&ecsCreateCmdTimeout, "timeout", 300, "timeout")
 
+}
+
+// RegisterNewTaskDefinition registers task definition
+func RegisterNewTaskDefinition(cpu, memory, port int64, service, image string) string {
+	taskdefinition := &ecs.TaskDefinition{
+		ContainerDefinitions: []ecs.ContainerDefinition{
+			ecs.ContainerDefinition{
+				Name:              aws.String(service),
+				Cpu:               aws.Int64(cpu),
+				Memory:            aws.Int64(memory),
+				MemoryReservation: aws.Int64(memory),
+				PortMappings: []ecs.PortMapping{
+					ecs.PortMapping{
+						ContainerPort: aws.Int64(port),
+						HostPort:      aws.Int64(0),
+						Protocol:      "tcp",
+					},
+				},
+				Image: aws.String(image),
+			},
+		},
+		Family: aws.String(service),
+	}
+
+	result, err := ecsw.RegisterTaskDefinition(taskdefinition)
+	ExitOnError(err, "registering task definition")
+
+	return *result.TaskDefinition.TaskDefinitionArn
+}
+
+// CPUAndMemory struct consisting of cpu and memory
+type CPUAndMemory struct {
+	CPU    int64
+	Memory int64
+}
+
+// GetCPUAndMemory returns GetCPUAndMemory based on given size
+func GetCPUAndMemory(size string) CPUAndMemory {
+	sizes := map[string]CPUAndMemory{
+		"xsmall":  CPUAndMemory{64, 128},
+		"small":   CPUAndMemory{128, 256},
+		"medium":  CPUAndMemory{256, 512},
+		"large":   CPUAndMemory{512, 1024},
+		"xlarge":  CPUAndMemory{1024, 2048},
+		"2xlarge": CPUAndMemory{1028, 4096},
+	}
+
+	return sizes[size]
 }

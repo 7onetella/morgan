@@ -43,7 +43,7 @@ var ecsStartCmd = &cobra.Command{
 		service := args[0]
 		taskdef := ""
 
-		// if cluster is not specified, then use "default" cluster with any name
+		// if cluster is not specified, then assume there is only one cluster and use that cluster
 		if len(cluster) == 0 {
 			clusters := GetClustersForService(service)
 
