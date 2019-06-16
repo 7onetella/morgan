@@ -22,28 +22,25 @@ package cmd
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/7onetella/morgan/tools/awsapi/ecsw"
 	"github.com/spf13/cobra"
 )
 
-var ecsUpdateCmdCluster string
-var ecsUpdateCmdDesiredCount int64
-var ecsUpdateCmdTimeout int64
+var ecsStopCmdCluster string
+var ecsStopCmdTimeout int64
 
-var ecsUpdateCmd = &cobra.Command{
-	Use:     "update <service name> <docker tags>",
-	Short:   "Updates ecs",
-	Long:    `Updates ecs`,
-	Example: "foo-svc 1.0.0 --cluster api-cluster",
+var ecsStopCmd = &cobra.Command{
+	Use:     "stop <service name>",
+	Short:   "Stops ecs",
+	Long:    `Stops ecs`,
+	Example: "foo-svc -c api-cluster",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		cluster := ecsUpdateCmdCluster
+		cluster := ecsStopCmdCluster
 		service := args[0]
 		taskdef := ""
-		tags := args[1:]
 
 		// if cluster is not specified, then use "default" cluster with any name
 		if len(cluster) == 0 {
@@ -61,46 +58,25 @@ var ecsUpdateCmd = &cobra.Command{
 		}
 		taskdef = *result.Services[0].TaskDefinition
 
-		// if --desired-count is not specified use the current count from service
-		if ecsUpdateCmdDesiredCount == 0 {
-			ecsUpdateCmdDesiredCount = *result.Services[0].DesiredCount
-		}
+		_, err = ecsw.UpdateService(cluster, service, taskdef, 0)
+		ExitOnError(err, "updating service with desired count of 0")
 
-		result2, err := ecsw.DescribeTaskDefinition(taskdef)
-		ExitOnError(err, "describing task definition")
-
-		for i, cd := range result2.TaskDefinition.ContainerDefinitions {
-			imageCurr := *cd.Image
-			colonIndex := strings.LastIndex(imageCurr, ":")
-			imageBase := imageCurr[:colonIndex]
-			// update the image with new docker tag
-			imageCurr = imageBase + tags[i]
-		}
-
-		result3, err := ecsw.RegisterTaskDefinition(result2.TaskDefinition)
-		ExitOnError(err, "registering task definition")
-
-		_, err = ecsw.UpdateService(cluster, service, *result3.TaskDefinition.TaskDefinitionArn, ecsUpdateCmdDesiredCount)
-		ExitOnError(err, "updating service")
-
-		err = ecsw.ServiceStable(cluster, service, ecsUpdateCmdTimeout)
+		err = ecsw.ServiceStable(cluster, service, ecsStopCmdTimeout)
 		ExitOnError(err, "service stable")
 
-		Success("updating service")
+		Success("stopping service")
 
 	},
 }
 
 func init() {
 
-	ecsCmd.AddCommand(ecsUpdateCmd)
+	ecsCmd.AddCommand(ecsStopCmd)
 
-	flags := ecsUpdateCmd.Flags()
+	flags := ecsStopCmd.Flags()
 
-	flags.StringVar(&ecsUpdateCmdCluster, "cluster", "", "ecs cluster")
+	flags.StringVarP(&ecsStopCmdCluster, "cluster", "c", "", "ecs cluster")
 
-	flags.Int64Var(&ecsUpdateCmdDesiredCount, "desired-count", 1, "desired count")
-
-	flags.Int64Var(&ecsUpdateCmdTimeout, "timeout", 300, "timeout")
+	flags.Int64VarP(&ecsStopCmdTimeout, "timeout", "t", 300, "timeout")
 
 }

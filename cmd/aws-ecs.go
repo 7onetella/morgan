@@ -21,6 +21,9 @@
 package cmd
 
 import (
+	"os"
+
+	"github.com/7onetella/morgan/tools/awsapi/ecsw"
 	"github.com/spf13/cobra"
 )
 
@@ -32,4 +35,39 @@ var ecsCmd = &cobra.Command{
 
 func init() {
 	awsCmd.AddCommand(ecsCmd)
+}
+
+// CheckForClusterAmbiguity checks for existence of given service in all clusters
+func CheckForClusterAmbiguity(clusters map[string]string) {
+	if len(clusters) > 1 {
+		Failure("checking for cluster ambiquity")
+		Info("more than one clusters with same service name found. you must explicitly specify --cluster argument")
+		Newline()
+		for k := range clusters {
+			Print(indentation + "  - " + k + "\n")
+		}
+		os.Exit(1)
+	}
+}
+
+// GetClusterForService gets the cluster for given service
+func GetClusterForService(clusters map[string]string, service string) string {
+
+	if len(clusters) == 1 {
+		for cluster, svc := range clusters {
+			if svc == service {
+				return cluster
+			}
+		}
+	}
+
+	return ""
+}
+
+// GetClustersForService gets the clusters for given service
+func GetClustersForService(service string) map[string]string {
+	clusters, err := ecsw.GetClustersForService(service)
+	ExitOnError(err, "getting clusters for service")
+
+	return clusters
 }

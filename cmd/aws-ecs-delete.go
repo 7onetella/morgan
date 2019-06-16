@@ -21,8 +21,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/7onetella/morgan/tools/awsapi/ecsw"
 	"github.com/spf13/cobra"
 )
@@ -40,28 +38,13 @@ var ecsDeleteCmd = &cobra.Command{
 		cluster := ecsDeleteCmdCluster
 		service := args[0]
 
-		clusters := map[string]string{}
-
+		// if cluster is not specified, then use "default" cluster with any name
 		if len(cluster) == 0 {
-			var err error
-			clusters, err = ecsw.GetClustersForService(service)
-			ExitOnError(err, "getting clusters for service")
-		}
+			clusters := GetClustersForService(service)
 
-		if len(clusters) > 1 {
-			Failure("deleting service")
-			Info("more than one clusters with same service name found. you must explicitly specify --cluster argument")
-			Newline()
-			for k := range clusters {
-				Print(indentation + "  - " + k + "\n")
-			}
-			os.Exit(1)
-		}
+			CheckForClusterAmbiguity(clusters)
 
-		if len(clusters) == 1 {
-			for k := range clusters {
-				cluster = k
-			}
+			cluster = GetClusterForService(clusters, service)
 		}
 
 		result, err := ecsw.DescribeServices(cluster, service)

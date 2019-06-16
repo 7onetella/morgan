@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"os"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
@@ -49,22 +48,13 @@ var ecsCreateCmd = &cobra.Command{
 		port, _ := strconv.Atoi(args[2])
 		image := args[3]
 
-		clusters := map[string]string{}
-
+		// if cluster is not specified, then use "default" cluster with any name
 		if len(cluster) == 0 {
-			var err error
-			clusters, err = ecsw.GetClustersForService(service)
-			ExitOnError(err, "getting clusters for service")
-		}
+			clusters := GetClustersForService(service)
 
-		if len(clusters) > 0 {
-			Failure("creating service")
-			Info("service [" + service + "] already exists in the following cluster or clusters")
-			Newline()
-			for k := range clusters {
-				Print(indentation + "  - " + k + "\n")
-			}
-			os.Exit(1)
+			CheckForClusterAmbiguity(clusters)
+
+			cluster = GetClusterForService(clusters, service)
 		}
 
 		taskdef := &ecs.TaskDefinition{
@@ -107,7 +97,7 @@ func init() {
 
 	flags := ecsCreateCmd.Flags()
 
-	flags.StringVar(&ecsCreateCmdCluster, "cluster", "", "ecs cluster")
+	flags.StringVarP(&ecsCreateCmdCluster, "cluster", "c", "", "ecs cluster")
 
 	flags.Int64Var(&ecsCreateCmdDesiredCount, "desired-count", 1, "desired count")
 
