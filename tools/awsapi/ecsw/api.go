@@ -174,6 +174,24 @@ func CreateService(cluster, service, taskdef string, desiredCount int64) (*ecs.C
 	return req.Send(ctx)
 }
 
+// DeleteService deletes ecs service
+func DeleteService(cluster, service string) (*ecs.DeleteServiceOutput, error) {
+	svc, err := newECS()
+	if err != nil {
+		return nil, err
+	}
+
+	req := svc.DeleteServiceRequest(&ecs.DeleteServiceInput{
+		Cluster: aws.String(cluster),
+		Service: aws.String(service),
+	})
+
+	ctx, cancel := newContextWithTimeout(awsTimeoutDefault)
+	defer cancel()
+
+	return req.Send(ctx)
+}
+
 // TaskDefinitionJSON task definition json
 type TaskDefinitionJSON struct {
 	Family               string `json:"family"`

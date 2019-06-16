@@ -36,7 +36,7 @@ var ecsCreateCmdDesiredCount int64
 var ecsCreateCmdTimeout int64
 
 var ecsCreateCmd = &cobra.Command{
-	Use:     "create <service name> <[xsmall|small|medium|large|xlarge] <port> <image>",
+	Use:     "create <service name> <size> <port> <image>",
 	Short:   "Creates ecs",
 	Long:    `Creates ecs`,
 	Example: "foo-svc small 8080 7onetella/ref-api:latest",

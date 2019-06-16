@@ -21,30 +21,24 @@
 package cmd
 
 import (
-	"errors"
 	"os"
-	"strings"
 
 	"github.com/7onetella/morgan/tools/awsapi/ecsw"
 	"github.com/spf13/cobra"
 )
 
-var ecsUpdateCmdCluster string
-var ecsUpdateCmdDesiredCount int64
-var ecsUpdateCmdTimeout int64
+var ecsDeleteCmdCluster string
 
-var ecsUpdateCmd = &cobra.Command{
-	Use:     "update <service name> <docker tags>",
-	Short:   "Updates ecs",
-	Long:    `Updates ecs`,
-	Example: "foo-svc 1.0.0 --cluster api-cluster",
+var ecsDeleteCmd = &cobra.Command{
+	Use:     "delete <service name>",
+	Short:   "Deletes ecs",
+	Long:    `Deletes ecs`,
+	Example: "foo-svc --cluster api-cluster",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		cluster := ecsUpdateCmdCluster
+		cluster := ecsDeleteCmdCluster
 		service := args[0]
-		taskdef := ""
-		tags := args[1:]
 
 		clusters := map[string]string{}
 
@@ -55,7 +49,7 @@ var ecsUpdateCmd = &cobra.Command{
 		}
 
 		if len(clusters) > 1 {
-			Failure("updating service")
+			Failure("deleting service")
 			Info("more than one clusters with same service name found. you must explicitly specify --cluster argument")
 			Newline()
 			for k := range clusters {
@@ -72,51 +66,28 @@ var ecsUpdateCmd = &cobra.Command{
 
 		result, err := ecsw.DescribeServices(cluster, service)
 		ExitOnError(err, "describing services")
-		taskdef = *result.Services[0].TaskDefinition
-		if len(result.Services) == 0 {
-			ExitOnError(errors.New("search result count 0"), "finding service")
-		}
-
-		// if --desired-count is not specified use the current count from service
-		if ecsUpdateCmdDesiredCount == 0 {
-			ecsUpdateCmdDesiredCount = *result.Services[0].DesiredCount
-		}
+		taskdef := *result.Services[0].TaskDefinition
 
 		result2, err := ecsw.DescribeTaskDefinition(taskdef)
 		ExitOnError(err, "describing task definition")
 
-		for i, cd := range result2.TaskDefinition.ContainerDefinitions {
-			imageCurr := *cd.Image
-			colonIndex := strings.LastIndex(imageCurr, ":")
-			imageBase := imageCurr[:colonIndex]
-			// update the image with new docker tag
-			imageCurr = imageBase + tags[i]
-		}
-
-		result3, err := ecsw.RegisterTaskDefinition(result2.TaskDefinition)
-		ExitOnError(err, "registering task definition")
-
-		_, err = ecsw.UpdateService(cluster, service, *result3.TaskDefinition.TaskDefinitionArn, ecsUpdateCmdDesiredCount)
+		_, err = ecsw.UpdateService(cluster, service, *result2.TaskDefinition.TaskDefinitionArn, 0)
 		ExitOnError(err, "updating service")
 
-		err = ecsw.ServiceStable(cluster, service, ecsUpdateCmdTimeout)
-		ExitOnError(err, "service stable")
+		_, err = ecsw.DeleteService(cluster, service)
+		ExitOnError(err, "deleting services")
 
-		Success("updating service")
+		Success("deleting service")
 
 	},
 }
 
 func init() {
 
-	ecsCmd.AddCommand(ecsUpdateCmd)
+	ecsCmd.AddCommand(ecsDeleteCmd)
 
-	flags := ecsUpdateCmd.Flags()
+	flags := ecsDeleteCmd.Flags()
 
-	flags.StringVar(&ecsUpdateCmdCluster, "cluster", "", "ecs cluster")
-
-	flags.Int64Var(&ecsUpdateCmdDesiredCount, "desired-count", 1, "desired count")
-
-	flags.Int64Var(&ecsUpdateCmdTimeout, "timeout", 300, "timeout")
+	flags.StringVar(&ecsDeleteCmdCluster, "cluster", "", "ecs cluster")
 
 }
