@@ -32,7 +32,7 @@ var ecsStartCmdTimeout int64
 var ecsStartCmdDesiredCount int64
 
 var ecsStartCmd = &cobra.Command{
-	Use:     "start-service <service name>",
+	Use:     "start-service <service names>",
 	Short:   "Starts ecs",
 	Long:    `Starts ecs`,
 	Example: "foo-svc -c api-cluster",
@@ -53,20 +53,24 @@ var ecsStartCmd = &cobra.Command{
 			cluster = GetClusterForService(clusters, service)
 		}
 
-		result, err := ecsw.DescribeServices(cluster, service)
-		ExitOnError(err, "describing services")
-		if len(result.Services) == 0 {
-			ExitOnError(errors.New("search result count 0"), "finding service")
+		services := args[0:]
+
+		for _, svc := range services {
+			result, err := ecsw.DescribeServices(cluster, svc)
+			ExitOnError(err, "describing services")
+			if len(result.Services) == 0 {
+				ExitOnError(errors.New("search result count 0"), "finding service")
+			}
+			taskdef = *result.Services[0].TaskDefinition
+
+			_, err = ecsw.UpdateService(cluster, svc, taskdef, ecsStartCmdDesiredCount)
+			ExitOnError(err, "updating service with specified desired count")
+
+			err = ecsw.ServiceStable(cluster, svc, ecsStartCmdTimeout)
+			ExitOnError(err, "service stable")
+
+			Success("starting service " + svc)
 		}
-		taskdef = *result.Services[0].TaskDefinition
-
-		_, err = ecsw.UpdateService(cluster, service, taskdef, ecsStartCmdDesiredCount)
-		ExitOnError(err, "updating service with specified desired count")
-
-		err = ecsw.ServiceStable(cluster, service, ecsStartCmdTimeout)
-		ExitOnError(err, "service stable")
-
-		Success("starting service")
 
 	},
 }

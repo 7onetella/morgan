@@ -52,20 +52,24 @@ var ecsStopCmd = &cobra.Command{
 			cluster = GetClusterForService(clusters, service)
 		}
 
-		result, err := ecsw.DescribeServices(cluster, service)
-		ExitOnError(err, "describing services")
-		if len(result.Services) == 0 {
-			ExitOnError(errors.New("search result count 0"), "finding service")
+		services := args[0:]
+
+		for _, svc := range services {
+			result, err := ecsw.DescribeServices(cluster, svc)
+			ExitOnError(err, "describing services")
+			if len(result.Services) == 0 {
+				ExitOnError(errors.New("search result count 0"), "finding service")
+			}
+			taskdef = *result.Services[0].TaskDefinition
+
+			_, err = ecsw.UpdateService(cluster, svc, taskdef, 0)
+			ExitOnError(err, "updating service with desired count of 0")
+
+			err = ecsw.ServiceStable(cluster, svc, ecsStopCmdTimeout)
+			ExitOnError(err, "service stable")
+
+			Success("stopping service " + svc)
 		}
-		taskdef = *result.Services[0].TaskDefinition
-
-		_, err = ecsw.UpdateService(cluster, service, taskdef, 0)
-		ExitOnError(err, "updating service with desired count of 0")
-
-		err = ecsw.ServiceStable(cluster, service, ecsStopCmdTimeout)
-		ExitOnError(err, "service stable")
-
-		Success("stopping service")
 
 	},
 }
