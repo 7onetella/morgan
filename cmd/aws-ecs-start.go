@@ -32,10 +32,11 @@ var ecsStartCmdTimeout int64
 var ecsStartCmdDesiredCount int64
 
 var ecsStartCmd = &cobra.Command{
-	Use:     "start <service name>",
+	Use:     "start-service <service name>",
 	Short:   "Starts ecs",
 	Long:    `Starts ecs`,
 	Example: "foo-svc -c api-cluster",
+	Aliases: []string{"start"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

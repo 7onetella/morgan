@@ -28,10 +28,11 @@ import (
 var ecsDeleteCmdCluster string
 
 var ecsDeleteCmd = &cobra.Command{
-	Use:     "delete <service name>",
+	Use:     "delete-service <service name>",
 	Short:   "Deletes ecs",
 	Long:    `Deletes ecs`,
 	Example: "foo-svc --cluster api-cluster",
+	Aliases: []string{"delete"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

@@ -31,10 +31,11 @@ var ecsStopCmdCluster string
 var ecsStopCmdTimeout int64
 
 var ecsStopCmd = &cobra.Command{
-	Use:     "stop <service name>",
+	Use:     "stop-service <service name>",
 	Short:   "Stops ecs",
 	Long:    `Stops ecs`,
 	Example: "foo-svc -c api-cluster",
+	Aliases: []string{"stop"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

@@ -33,10 +33,11 @@ var ecsUpdateCmdDesiredCount int64
 var ecsUpdateCmdTimeout int64
 
 var ecsUpdateCmd = &cobra.Command{
-	Use:     "update <service name> <docker tags>",
+	Use:     "update-service <service name> <docker tags>",
 	Short:   "Updates ecs",
 	Long:    `Updates ecs`,
 	Example: "foo-svc 1.0.0 --cluster api-cluster",
+	Aliases: []string{"update"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
