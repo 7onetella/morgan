@@ -30,6 +30,7 @@ import (
 var ecsStartCmdCluster string
 var ecsStartCmdTimeout int64
 var ecsStartCmdDesiredCount int64
+var ecsStartCmdWaitForServiceStable bool
 
 var ecsStartCmd = &cobra.Command{
 	Use:     "start-service <service names>",
@@ -66,8 +67,10 @@ var ecsStartCmd = &cobra.Command{
 			_, err = ecsw.UpdateService(cluster, svc, taskdef, ecsStartCmdDesiredCount)
 			ExitOnError(err, "updating service with specified desired count")
 
-			err = ecsw.ServiceStable(cluster, svc, ecsStartCmdTimeout)
-			ExitOnError(err, "service stable")
+			if ecsStartCmdWaitForServiceStable {
+				err = ecsw.ServiceStable(cluster, svc, ecsStartCmdTimeout)
+				ExitOnError(err, "service stable")
+			}
 
 			Success("starting service " + svc)
 		}
@@ -86,5 +89,7 @@ func init() {
 	flags.Int64VarP(&ecsStartCmdTimeout, "timeout", "t", 300, "timeout")
 
 	flags.Int64Var(&ecsStartCmdDesiredCount, "desired-count", 1, "desired count")
+
+	flags.BoolVarP(&ecsStartCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
 
 }

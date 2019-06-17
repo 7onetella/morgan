@@ -25,7 +25,7 @@ func DeleteService(service string) {
 
 func CreateService() (string, string, error) {
 	service := ServiceUUID()
-	cmd := fmt.Sprintf("morgan aws ecs create-service %s small 8080 nginx:latest --cluster Shared --log debug", service)
+	cmd := fmt.Sprintf("morgan aws ecs create-service %s small 8080 nginx:latest --cluster Development --log debug", service)
 
 	stdout, _, err := execw.Exec(strings.Split(cmd, " "))
 
@@ -56,7 +56,7 @@ func TestStopService(t *testing.T) {
 	LogFail(stdout, "morgan aws ecs create-service failed: %v", err, t)
 	fmt.Println(stdout)
 
-	cmd := fmt.Sprintf("morgan aws ecs stop-service %s --cluster Shared --log debug", service)
+	cmd := fmt.Sprintf("morgan aws ecs stop-service %s --cluster Development --log debug", service)
 	stdout, _, err = execw.Exec(strings.Split(cmd, " "))
 	LogFail(stdout, "morgan aws ecs stop-service failed: %v", err, t)
 
@@ -70,11 +70,11 @@ func TestStartService(t *testing.T) {
 	LogFail(stdout, "morgan aws ecs create-service failed: %v", err, t)
 	fmt.Println(stdout)
 
-	cmd := fmt.Sprintf("morgan aws ecs stop-service %s --cluster Shared --log debug", service)
+	cmd := fmt.Sprintf("morgan aws ecs stop-service %s --cluster Development --log debug", service)
 	stdout, _, err = execw.Exec(strings.Split(cmd, " "))
 	LogFail(stdout, "morgan aws ecs stop-service failed: %v", err, t)
 
-	cmd = fmt.Sprintf("morgan aws ecs start-service %s --cluster Shared --log debug", service)
+	cmd = fmt.Sprintf("morgan aws ecs start-service %s --cluster Development --log debug", service)
 	stdout, _, err = execw.Exec(strings.Split(cmd, " "))
 	LogFail(stdout, "morgan aws ecs start-service failed: %v", err, t)
 
@@ -88,7 +88,7 @@ func TestUpdateService(t *testing.T) {
 	LogFail(stdout, "morgan aws ecs create-service failed: %v", err, t)
 	fmt.Println(stdout)
 
-	cmd := fmt.Sprintf("morgan aws ecs update-service %s latest --cluster Shared --log debug", service)
+	cmd := fmt.Sprintf("morgan aws ecs update-service %s latest --cluster Development --log debug", service)
 	stdout, _, err = execw.Exec(strings.Split(cmd, " "))
 	LogFail(stdout, "morgan aws ecs update-service failed: %v", err, t)
 

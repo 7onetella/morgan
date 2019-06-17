@@ -29,6 +29,7 @@ import (
 
 var ecsStopCmdCluster string
 var ecsStopCmdTimeout int64
+var ecsStopCmdWaitForServiceStable bool
 
 var ecsStopCmd = &cobra.Command{
 	Use:     "stop-service <service name>",
@@ -65,8 +66,10 @@ var ecsStopCmd = &cobra.Command{
 			_, err = ecsw.UpdateService(cluster, svc, taskdef, 0)
 			ExitOnError(err, "updating service with desired count of 0")
 
-			err = ecsw.ServiceStable(cluster, svc, ecsStopCmdTimeout)
-			ExitOnError(err, "service stable")
+			if ecsStopCmdWaitForServiceStable {
+				err = ecsw.ServiceStable(cluster, svc, ecsStopCmdTimeout)
+				ExitOnError(err, "service stable")
+			}
 
 			Success("stopping service " + svc)
 		}
@@ -83,5 +86,7 @@ func init() {
 	flags.StringVarP(&ecsStopCmdCluster, "cluster", "c", "", "ecs cluster")
 
 	flags.Int64VarP(&ecsStopCmdTimeout, "timeout", "t", 300, "timeout")
+
+	flags.BoolVarP(&ecsStopCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
 
 }

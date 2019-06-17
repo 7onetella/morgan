@@ -31,6 +31,7 @@ import (
 var ecsUpdateCmdCluster string
 var ecsUpdateCmdDesiredCount int64
 var ecsUpdateCmdTimeout int64
+var ecsUpdateCmdWaitForServiceStable bool
 
 var ecsUpdateCmd = &cobra.Command{
 	Use:     "update-service <service name> <docker tags>",
@@ -84,8 +85,10 @@ var ecsUpdateCmd = &cobra.Command{
 		_, err = ecsw.UpdateService(cluster, service, *result3.TaskDefinition.TaskDefinitionArn, ecsUpdateCmdDesiredCount)
 		ExitOnError(err, "updating service")
 
-		err = ecsw.ServiceStable(cluster, service, ecsUpdateCmdTimeout)
-		ExitOnError(err, "service stable")
+		if ecsUpdateCmdWaitForServiceStable {
+			err = ecsw.ServiceStable(cluster, service, ecsUpdateCmdTimeout)
+			ExitOnError(err, "service stable")
+		}
 
 		Success("updating service")
 
@@ -103,5 +106,7 @@ func init() {
 	flags.Int64Var(&ecsUpdateCmdDesiredCount, "desired-count", 1, "desired count")
 
 	flags.Int64Var(&ecsUpdateCmdTimeout, "timeout", 300, "timeout")
+
+	flags.BoolVarP(&ecsUpdateCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
 
 }

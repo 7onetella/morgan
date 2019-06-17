@@ -35,6 +35,7 @@ var ecsCreateCmdService string
 var ecsCreateCmdTaskDefinition string
 var ecsCreateCmdDesiredCount int64
 var ecsCreateCmdTimeout int64
+var ecsCreateCmdWaitForServiceStable bool
 
 var ecsCreateCmd = &cobra.Command{
 	Use:     "create-service <service-name> <size> <port> <image>",
@@ -72,8 +73,10 @@ var ecsCreateCmd = &cobra.Command{
 		_, err := ecsw.CreateService(cluster, service, taskdef, ecsCreateCmdDesiredCount)
 		ExitOnError(err, "creating service")
 
-		err = ecsw.ServiceStable(cluster, service, ecsCreateCmdTimeout)
-		ExitOnError(err, "service stable")
+		if ecsCreateCmdWaitForServiceStable {
+			err = ecsw.ServiceStable(cluster, service, ecsCreateCmdTimeout)
+			ExitOnError(err, "service stable")
+		}
 
 		Success("creating service")
 
@@ -95,6 +98,8 @@ func init() {
 	flags.Int64Var(&ecsCreateCmdDesiredCount, "desired-count", 1, "desired count")
 
 	flags.Int64Var(&ecsCreateCmdTimeout, "timeout", 300, "timeout")
+
+	flags.BoolVarP(&ecsCreateCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
 
 }
 
