@@ -41,20 +41,20 @@ var ec2StartCmd = &cobra.Command{
 
 		instanceIDs, err := ec2w.GetInstanceIDsByNames(args)
 		ExitOn(err)
-		names := map[string]string{}
 
-		for i, name := range args {
-			names[instanceIDs[i]] = name
+		instanceIDSlice := []string{}
+		for k := range instanceIDs {
+			instanceIDSlice = append(instanceIDSlice, k)
 		}
 
-		resp, err := ec2w.StartInstances(instanceIDs)
+		resp, err := ec2w.StartInstances(instanceIDSlice)
 		ExitOn(err)
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"Name", "Instance ID", "Prev", "Current"})
 
 		for _, c := range resp.StartingInstances {
-			table.Append([]string{names[*c.InstanceId], *c.InstanceId, string(c.PreviousState.Name), string(c.CurrentState.Name)})
+			table.Append([]string{instanceIDs[*c.InstanceId], *c.InstanceId, string(c.PreviousState.Name), string(c.CurrentState.Name)})
 		}
 		table.Render()
 	},

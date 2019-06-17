@@ -85,19 +85,23 @@ func DescribeInstanceByNameTag(name string) (*ec2.DescribeInstancesOutput, error
 }
 
 // GetInstanceIDsByNames gets instance ids by names
-func GetInstanceIDsByNames(names []string) ([]string, error) {
+func GetInstanceIDsByNames(names []string) (map[string]string, error) {
 
-	instanceIDs := []string{}
+	instanceIDs := map[string]string{}
 
 	for _, name := range names {
 		resp, err := DescribeInstanceByNameTag(name)
 		if err != nil {
-			return []string{}, err
+			return map[string]string{}, err
 		}
 		if len(resp.Reservations) == 0 {
-			return []string{}, fmt.Errorf("can not find instance for %s", name)
+			return map[string]string{}, fmt.Errorf("can not find instance for %s", name)
 		}
-		instanceIDs = append(instanceIDs, *resp.Reservations[0].Instances[0].InstanceId)
+		for _, reservation := range resp.Reservations {
+			for _, instance := range reservation.Instances {
+				instanceIDs[*instance.InstanceId] = name
+			}
+		}
 	}
 
 	return instanceIDs, nil
