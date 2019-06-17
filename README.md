@@ -20,6 +20,11 @@ morgan aws ecs create-service \
     --desired-count 1
 ```
 
+## Installation
+```
+go get github.com/7onetella/morgan
+```
+
 Here is more examples
 
 ![ECS Opearation](/asset/ecs-crud.png)
