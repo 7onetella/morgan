@@ -99,7 +99,7 @@ func GetClustersForService(service string) (map[string]string, error) {
 }
 
 // DescribeServices describes ecs services
-func DescribeServices(cluster, service string) (*ecs.DescribeServicesOutput, error) {
+func DescribeServices(cluster string, services ...string) (*ecs.DescribeServicesOutput, error) {
 	svc, err := newECS()
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func DescribeServices(cluster, service string) (*ecs.DescribeServicesOutput, err
 
 	req := svc.DescribeServicesRequest(&ecs.DescribeServicesInput{
 		Cluster:  aws.String(cluster),
-		Services: []string{service},
+		Services: services,
 	})
 
 	ctx, cancel := newContextWithTimeout(awsTimeoutDefault)
