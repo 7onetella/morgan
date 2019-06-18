@@ -39,10 +39,24 @@ var ecsCreateCmdTimeout int64
 var ecsCreateCmdWaitForServiceStable bool
 
 var ecsCreateCmd = &cobra.Command{
-	Use:     "create-service <service-name> <size> <port> <image>",
-	Short:   "Creates ecs",
-	Long:    `Creates ecs`,
-	Example: "foo-svc small 8080 7onetella/ref-api:latest",
+	Use:   "create-service <service-name> <size> <port> <image>",
+	Short: "Creates ecs",
+	Long: `
+Presently, there is no support for attaching the ecs service to ALB. ALB will be supported shortly. 
+You are expected to have some other mechanism to put your service behind reverse proxy. 
+Consul and Fabio proxy can be used to attach standalone service such as our example.
+
+The value of <size> parameter is t-shirt sized.
+* xsmall  : CPU 63,   Memory 128
+* small   : CPU 128,  Memory 256
+* medium  : CPU 256,  Memory 512
+* large   : CPU 512,  Memory 1024
+* xlarge  : CPU 1024, Memory 2048
+* 2xlarge : CPU 2024, Memory 4096`,
+	Example: `hello-world xsmall 8080 7onetealla/ref-api:latest \
+	--cluster Development \
+	-e NAME=web \
+	-e URLPREFIX=foo-svc.example.com/`,
 	Aliases: []string{"create"},
 	Args:    cobra.MinimumNArgs(4),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -92,19 +106,19 @@ func init() {
 
 	flags := ecsCreateCmd.Flags()
 
-	flags.StringVarP(&ecsCreateCmdCluster, "cluster", "c", "", "ecs cluster")
+	flags.StringVarP(&ecsCreateCmdCluster, "cluster", "c", "", "optional: ecs cluster name")
 
-	flags.StringVarP(&ecsCreateCmdService, "service", "s", "", "service name")
+	flags.StringVarP(&ecsCreateCmdService, "service", "s", "", "required: service name")
 
-	flags.StringVar(&ecsCreateCmdTaskDefinition, "task-definition", "", "task definition")
+	flags.StringVar(&ecsCreateCmdTaskDefinition, "task-definition", "", "optional: task definition. e.g. family:revision")
 
-	flags.Int64Var(&ecsCreateCmdDesiredCount, "desired-count", 1, "desired count")
+	flags.Int64Var(&ecsCreateCmdDesiredCount, "desired-count", 1, "optional: desired count")
 
-	flags.Int64Var(&ecsCreateCmdTimeout, "timeout", 300, "timeout")
+	flags.BoolVarP(&ecsCreateCmdWaitForServiceStable, "service-stable", "w", false, "optional: waits for service to become stable")
 
-	flags.BoolVarP(&ecsCreateCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
+	flags.Int64Var(&ecsCreateCmdTimeout, "timeout", 300, "optional: timeout for service stable")
 
-	flags.StringSliceVarP(&ecsCreateCmdEnvVars, "env", "e", []string{}, "environment variables")
+	flags.StringSliceVarP(&ecsCreateCmdEnvVars, "env", "e", []string{}, "optional: environment variables. e.g. -e key=value")
 
 }
 
