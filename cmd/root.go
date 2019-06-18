@@ -357,3 +357,21 @@ func UpdateExampleOnChildren(currCmd *cobra.Command) {
 		currCmd.Example = "  " + currCmd.Name() + " " + currCmd.Example
 	}
 }
+
+// ConvertKeyValuePairArgSliceToMap converts slice of key=value to map
+func ConvertKeyValuePairArgSliceToMap(keyvals []string) map[string]string {
+	data := map[string]string{}
+	for _, keyval := range keyvals {
+		s := strings.TrimSpace(keyval)
+		tokens := strings.Split(s, "=")
+		// avoid error
+		if len(tokens) != 2 {
+			continue
+		}
+		key := tokens[0]
+		val := tokens[1]
+		data[strings.TrimSpace(key)] = strings.TrimSpace(val)
+	}
+
+	return data
+}

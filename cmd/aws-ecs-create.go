@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
@@ -33,6 +34,7 @@ import (
 var ecsCreateCmdCluster string
 var ecsCreateCmdService string
 var ecsCreateCmdTaskDefinition string
+var ecsCreateCmdEnvVars []string
 var ecsCreateCmdDesiredCount int64
 var ecsCreateCmdTimeout int64
 var ecsCreateCmdWaitForServiceStable bool
@@ -65,9 +67,12 @@ var ecsCreateCmd = &cobra.Command{
 			cluster = GetClusterForService(clusters, service)
 		}
 
+		envs := ConvertKeyValuePairArgSliceToMap(ecsCreateCmdEnvVars)
+		fmt.Println("envs", envs)
+
 		if len(taskdef) == 0 {
 			cm := GetCPUAndMemory(size)
-			taskdef = RegisterNewTaskDefinition(cm.CPU, cm.Memory, int64(port), service, image)
+			taskdef = RegisterNewTaskDefinition(cm.CPU, cm.Memory, int64(port), service, image, envs)
 		}
 
 		_, err := ecsw.CreateService(cluster, service, taskdef, ecsCreateCmdDesiredCount)
@@ -101,10 +106,21 @@ func init() {
 
 	flags.BoolVarP(&ecsCreateCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
 
+	flags.StringSliceVarP(&ecsCreateCmdEnvVars, "env", "e", []string{}, "environment variables")
+
 }
 
 // RegisterNewTaskDefinition registers task definition
-func RegisterNewTaskDefinition(cpu, memory, port int64, service, image string) string {
+func RegisterNewTaskDefinition(cpu, memory, port int64, service, image string, environmentVars map[string]string) string {
+	envs := []ecs.KeyValuePair{}
+
+	for k, v := range environmentVars {
+		envs = append(envs, ecs.KeyValuePair{
+			Name:  aws.String(k),
+			Value: aws.String(v),
+		})
+	}
+
 	taskdefinition := &ecs.TaskDefinition{
 		ContainerDefinitions: []ecs.ContainerDefinition{
 			ecs.ContainerDefinition{
@@ -119,7 +135,8 @@ func RegisterNewTaskDefinition(cpu, memory, port int64, service, image string) s
 						Protocol:      "tcp",
 					},
 				},
-				Image: aws.String(image),
+				Image:       aws.String(image),
+				Environment: envs,
 			},
 		},
 		Family: aws.String(service),
