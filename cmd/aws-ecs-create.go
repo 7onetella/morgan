@@ -39,7 +39,7 @@ var ecsCreateCmdTimeout int64
 var ecsCreateCmdWaitForServiceStable bool
 
 var ecsCreateCmd = &cobra.Command{
-	Use:   "create-service <service-name> <size> <port> <image>",
+	Use:   "create-service <service-name> <size> <port> <docker-image>",
 	Short: "Creates ecs",
 	Long: `
 Presently, there is no support for attaching the ecs service to ALB. ALB will be supported shortly. 
