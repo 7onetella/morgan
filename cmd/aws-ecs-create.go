@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
@@ -68,7 +67,6 @@ var ecsCreateCmd = &cobra.Command{
 		}
 
 		envs := ConvertKeyValuePairArgSliceToMap(ecsCreateCmdEnvVars)
-		fmt.Println("envs", envs)
 
 		if len(taskdef) == 0 {
 			cm := GetCPUAndMemory(size)
