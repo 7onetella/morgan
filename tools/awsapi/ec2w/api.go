@@ -62,26 +62,34 @@ func StopInstances(instanceIDs []string) (*ec2.StopInstancesOutput, error) {
 	return req.Send(ctx)
 }
 
-// DescribeInstanceByNameTag describes instance by name tag
-func DescribeInstanceByNameTag(name string) (*ec2.DescribeInstancesOutput, error) {
+// DescribeInstanceByTagAndValue describes instance by tag and tag values
+func DescribeInstanceByTagAndValue(tagName string, values ...string) (*ec2.DescribeInstancesOutput, error) {
 	svc, err := newEC2()
 	if err != nil {
 		return nil, err
 	}
 
-	req := svc.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		Filters: []ec2.Filter{
+	input := &ec2.DescribeInstancesInput{}
+	if len(tagName) > 0 && len(values) > 0 {
+		input.Filters = []ec2.Filter{
 			ec2.Filter{
-				Name:   aws.String("tag:Name"),
-				Values: []string{name},
+				Name:   aws.String("tag:" + tagName),
+				Values: values,
 			},
-		},
-	})
+		}
+	}
+
+	req := svc.DescribeInstancesRequest(input)
 
 	ctx, cancel := newContextWithTimeout(awsTimeoutDefault)
 	defer cancel()
 
 	return req.Send(ctx)
+}
+
+// DescribeInstanceByNameTag describes instance by name tag
+func DescribeInstanceByNameTag(name string) (*ec2.DescribeInstancesOutput, error) {
+	return DescribeInstanceByTagAndValue("Name", name)
 }
 
 // GetInstanceIDsByNames gets instance ids by names
