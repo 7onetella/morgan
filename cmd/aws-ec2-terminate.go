@@ -22,56 +22,43 @@ package cmd
 
 import (
 	"os"
-	"strings"
 
 	"github.com/7onetella/morgan/tools/awsapi/ec2w"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
-var ec2DescribeCmdName string
-
-var ec2DescribeCmd = &cobra.Command{
-	Use:     "describe-instances",
-	Short:   "Describes ec2 instances",
-	Long:    `Describes ec2 instances`,
-	Example: "",
-	Aliases: []string{"describe"},
-	Args:    cobra.MinimumNArgs(0),
+var ec2TerminateCmd = &cobra.Command{
+	Use:     "terminate <instance names>",
+	Short:   "Terminates ec2",
+	Long:    `Terminates ec2`,
+	Example: "nginx redis",
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		Newline()
 
-		resp, err := ec2w.DescribeInstanceByTagAndValue("", "")
+		instanceIDs, err := ec2w.GetInstanceIDsByNames(args)
+		ExitOn(err)
+
+		instanceIDSlice := []string{}
+		for k := range instanceIDs {
+			instanceIDSlice = append(instanceIDSlice, k)
+		}
+
+		resp, err := ec2w.TerminateInstances(instanceIDSlice)
 		ExitOn(err)
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "State", "Priv IP", "Instance ID"})
+		table.SetHeader([]string{"Name", "Instance ID", "Prev", "Current"})
 
-		for _, r := range resp.Reservations {
-			for _, i := range r.Instances {
-				var name string
-				for _, t := range i.Tags {
-					if *t.Key == "Name" {
-						name = *t.Value
-					}
-				}
-				if len(ec2DescribeCmdName) > 0 && !strings.Contains(name, ec2DescribeCmdName) {
-					continue
-				}
-				table.Append([]string{name, string(i.State.Name), *i.PrivateIpAddress, *i.InstanceId})
-			}
+		for _, c := range resp.TerminatingInstances {
+			table.Append([]string{instanceIDs[*c.InstanceId], *c.InstanceId, string(c.PreviousState.Name), string(c.CurrentState.Name)})
 		}
 		table.Render()
 	},
 }
 
 func init() {
-
-	ec2Cmd.AddCommand(ec2DescribeCmd)
-
-	flags := ec2DescribeCmd.Flags()
-
-	flags.StringVar(&ec2DescribeCmdName, "name", "", "optional: ec2 name")
-
+	ec2Cmd.AddCommand(ec2TerminateCmd)
 }

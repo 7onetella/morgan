@@ -33,11 +33,10 @@ var ecsStartCmdDesiredCount int64
 var ecsStartCmdWaitForServiceStable bool
 
 var ecsStartCmd = &cobra.Command{
-	Use:     "start-service <service names>",
+	Use:     "start <service names>",
 	Short:   "Starts ecs",
 	Long:    `Starts ecs`,
 	Example: "foo-svc -c api-cluster",
-	Aliases: []string{"start"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

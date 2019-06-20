@@ -62,6 +62,23 @@ func StopInstances(instanceIDs []string) (*ec2.StopInstancesOutput, error) {
 	return req.Send(ctx)
 }
 
+// TerminateInstances terminates instances
+func TerminateInstances(instanceIDs []string) (*ec2.TerminateInstancesOutput, error) {
+	svc, err := newEC2()
+	if err != nil {
+		return nil, err
+	}
+
+	req := svc.TerminateInstancesRequest(&ec2.TerminateInstancesInput{
+		InstanceIds: instanceIDs,
+	})
+
+	ctx, cancel := newContextWithTimeout(awsTimeoutDefault)
+	defer cancel()
+
+	return req.Send(ctx)
+}
+
 // DescribeInstanceByTagAndValue describes instance by tag and tag values
 func DescribeInstanceByTagAndValue(tagName string, values ...string) (*ec2.DescribeInstancesOutput, error) {
 	svc, err := newEC2()
