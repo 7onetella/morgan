@@ -40,42 +40,87 @@ var ecsDescribeCmd = &cobra.Command{
 	Long:    `Describes ecs`,
 	Example: "foo-svc 1.0.0 --cluster api-cluster",
 	Aliases: []string{"describe"},
-	Args:    cobra.MinimumNArgs(1),
+	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		cluster := ecsDescribeCmdCluster
-		service := args[0]
+		specifiedCluster := ecsDescribeCmdCluster
+		clusterMembers := map[string][]string{}
 
-		// if cluster is not specified, then assume there is only one cluster and use that cluster
-		if len(cluster) == 0 {
-			clusters := GetClustersForService(service)
+		isClusterSpecified := len(specifiedCluster) > 0
+		isServicesSpecified := len(args) > 0
 
-			CheckForClusterAmbiguity(clusters)
+		// if no services are specified then get all services from all clusters
+		if !isServicesSpecified {
+			var clusters []string
+			if !isClusterSpecified {
+				result, err := ecsw.ListClusters()
+				ExitOnError(err, "listing clusters")
+				for _, clusterARN := range result.ClusterArns {
+					slashIndex := strings.LastIndex(clusterARN, "/")
+					cluster := clusterARN[slashIndex+1:]
+					clusters = append(clusters, cluster)
+				}
+			} else {
+				// if cluster is specified, add specified cluster to clusters
+				clusters = []string{specifiedCluster}
+			}
 
-			cluster = GetClusterForService(clusters, service)
+			for _, cluster := range clusters {
+				result, err := ecsw.ListServices(cluster)
+				ExitOnError(err, "listing services")
+				serviceARNs := result.ServiceArns
+				if len(serviceARNs) == 0 {
+					continue
+				}
+				clusterMembers[cluster] = serviceARNs
+			}
 		}
 
-		services := args[0:]
-
-		result, err := ecsw.DescribeServices(cluster, services...)
-		ExitOnError(err, "describing services")
-		if len(result.Services) == 0 {
-			ExitOnError(errors.New("search result count 0"), "finding services")
+		if isServicesSpecified {
+			if !isClusterSpecified {
+				for _, service := range args[0:] {
+					clustersForSvc, err := ecsw.GetClustersForService(service)
+					ExitOnError(err, "getting clusters for service")
+					for cluster := range clustersForSvc {
+						// pull services for cluster
+						currServices := clusterMembers[cluster]
+						// if current services does not contain service
+						var isServiceFound bool
+						for _, serivceName := range currServices {
+							if serivceName == service {
+								isServiceFound = true
+								break
+							}
+						}
+						if !isServiceFound {
+							currServices = append(currServices, service)
+						}
+						// put modified services back into clusterMembers
+						clusterMembers[cluster] = currServices
+					}
+				}
+			} else {
+				clusterMembers[specifiedCluster] = args[0:]
+			}
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "Pending", "Running", "Desired", "TaskDef"})
+		table.SetHeader([]string{"Cluster", "Name", "Pending", "Running", "Desired", "TaskDef", "Tags"})
 
-		for _, s := range result.Services {
-			taskdefarn := *s.TaskDefinition
-			lastSlash := strings.LastIndex(taskdefarn, "/")
-			taskdef := taskdefarn[lastSlash+1:]
-			toString := func(num *int64) string {
-				v := strconv.Itoa(int(*num))
-				return v
+		for cluster, serviceARNS := range clusterMembers {
+			result, err := ecsw.DescribeServices(cluster, serviceARNS...)
+			ExitOnError(err, "describing services")
+			if len(result.Services) == 0 {
+				ExitOnError(errors.New("search result count 0"), "finding services")
 			}
-			table.Append([]string{*s.ServiceName, toString(s.PendingCount), toString(s.RunningCount), toString(s.DesiredCount), taskdef})
+
+			for _, s := range result.Services {
+				taskdef := parseTaskDefinitionStr(*s.TaskDefinition)
+				tags := getTags(taskdef)
+				table.Append([]string{cluster, *s.ServiceName, toString(s.PendingCount), toString(s.RunningCount), toString(s.DesiredCount), taskdef, strings.Join(tags, ",")})
+			}
 		}
+
 		table.Render()
 
 	},
@@ -89,4 +134,29 @@ func init() {
 
 	flags.StringVar(&ecsDescribeCmdCluster, "cluster", "", "ecs cluster")
 
+}
+
+func parseTaskDefinitionStr(taskdefARN string) string {
+	lastSlash := strings.LastIndex(taskdefARN, "/")
+	taskdef := taskdefARN[lastSlash+1:]
+	return taskdef
+}
+
+func toString(num *int64) string {
+	v := strconv.Itoa(int(*num))
+	return v
+}
+
+func getTags(taskdef string) []string {
+	var tags []string
+	t, err := ecsw.DescribeTaskDefinition(taskdef)
+	if err == nil {
+		for _, cd := range t.TaskDefinition.ContainerDefinitions {
+			image := *cd.Image
+			colonIndex := strings.LastIndex(image, ":")
+			tag := image[colonIndex+1:]
+			tags = append(tags, tag)
+		}
+	}
+	return tags
 }

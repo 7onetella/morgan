@@ -29,14 +29,27 @@ import (
 )
 
 var ecsUpdateCmdCluster string
+var ecsUpdateCmdTags []string
 var ecsUpdateCmdDesiredCount int64
 var ecsUpdateCmdTimeout int64
 var ecsUpdateCmdWaitForServiceStable bool
 
 var ecsUpdateCmd = &cobra.Command{
-	Use:     "update-service <service name> <docker tags>",
-	Short:   "Updates ecs",
-	Long:    `Updates ecs`,
+	Use:   "update-service <service name> <docker tags>",
+	Short: "Updates ecs",
+	Long: `Updates ecs. You can specify --docker-tags or --desired-count. The usecase with docker tag would be deploying a new version. 
+The other usecase with desired count would be controlling migration to new version. For example, 
+
+let's assume v1 of hello-world app exists. deploy version 2 of hello-world app that maps to same host and path
+
+$ aws ecs create hello-world-v2 xsmall 8080 myapp:v2 -e URLPREFIX=hello-world.example.com/ --desired-count 5
+
+$ aws ecs update hello-world-v1 --desired-count 5
+
+if dynamic router such as fabio is used, then the web traffic will be split 50 and 50 between v1 and v2.
+
+the combination of dynamic routing and service update count can aid in safe deployment.
+`,
 	Example: "foo-svc 1.0.0 --cluster api-cluster",
 	Aliases: []string{"update"},
 	Args:    cobra.MinimumNArgs(1),
@@ -46,6 +59,18 @@ var ecsUpdateCmd = &cobra.Command{
 		service := args[0]
 		taskdef := ""
 		tags := args[1:]
+
+		// can't specify docker tags arugment and flag
+		if len(tags) > 0 && len(ecsUpdateCmdTags) > 0 {
+			Failure("there is amguity in docker tags. please use either --docker-tags flag or specify tags as second argument onwards.")
+		}
+
+		// if docker tags argument is not specified use the flag
+		if len(tags) == 0 && len(ecsUpdateCmdTags) > 0 {
+			for _, tag := range ecsUpdateCmdTags {
+				tags = append(tags, strings.TrimSpace(tag))
+			}
+		}
 
 		// if cluster is not specified, then assume there is only one cluster and use that cluster
 		if len(cluster) == 0 {
@@ -71,12 +96,15 @@ var ecsUpdateCmd = &cobra.Command{
 		result2, err := ecsw.DescribeTaskDefinition(taskdef)
 		ExitOnError(err, "describing task definition")
 
-		for i, cd := range result2.TaskDefinition.ContainerDefinitions {
-			imageCurr := *cd.Image
-			colonIndex := strings.LastIndex(imageCurr, ":")
-			imageBase := imageCurr[:colonIndex]
-			// update the image with new docker tag
-			imageCurr = imageBase + tags[i]
+		// if tags are specified only then update the tags in container definition
+		if len(tags) > 0 {
+			for i, cd := range result2.TaskDefinition.ContainerDefinitions {
+				imageCurr := *cd.Image
+				colonIndex := strings.LastIndex(imageCurr, ":")
+				imageBase := imageCurr[:colonIndex]
+				// update the image with new docker tag
+				imageCurr = imageBase + tags[i]
+			}
 		}
 
 		result3, err := ecsw.RegisterTaskDefinition(result2.TaskDefinition)
@@ -101,12 +129,14 @@ func init() {
 
 	flags := ecsUpdateCmd.Flags()
 
-	flags.StringVar(&ecsUpdateCmdCluster, "cluster", "", "ecs cluster")
+	flags.StringVar(&ecsUpdateCmdCluster, "cluster", "", "optional: ecs cluster")
 
-	flags.Int64Var(&ecsUpdateCmdDesiredCount, "desired-count", 1, "desired count")
+	flags.Int64Var(&ecsUpdateCmdDesiredCount, "desired-count", 1, "optional: desired count")
 
-	flags.Int64Var(&ecsUpdateCmdTimeout, "timeout", 300, "timeout")
+	flags.Int64Var(&ecsUpdateCmdTimeout, "timeout", 300, "optional: service stable timeout")
 
-	flags.BoolVarP(&ecsUpdateCmdWaitForServiceStable, "service-stable", "w", false, "waits for service to become stable")
+	flags.BoolVarP(&ecsUpdateCmdWaitForServiceStable, "service-stable", "w", false, "optional: waits for service to become stable")
+
+	flags.StringSliceVarP(&ecsUpdateCmdTags, "docker-tags", "t", []string{}, `optional: docker tags. ex) -docker-tags="1.0.0,2.0.0"`)
 
 }
