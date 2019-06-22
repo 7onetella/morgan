@@ -35,11 +35,11 @@ var ecsDescribeCmdCluster string
 var ecsDescribeCmdTimeout int64
 
 var ecsDescribeCmd = &cobra.Command{
-	Use:     "describe-services <service names>",
+	Use:     "describe <service names>",
 	Short:   "Describes ecs",
 	Long:    `Describes ecs`,
 	Example: "foo-svc 1.0.0 --cluster api-cluster",
-	Aliases: []string{"describe"},
+	Aliases: []string{"describe-services"},
 	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 

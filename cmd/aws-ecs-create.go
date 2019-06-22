@@ -39,7 +39,7 @@ var ecsCreateCmdTimeout int64
 var ecsCreateCmdWaitForServiceStable bool
 
 var ecsCreateCmd = &cobra.Command{
-	Use:   "create-service <service-name> <size> <port> <docker-image>",
+	Use:   "create <service-name> <size> <port> <docker-image>",
 	Short: "Creates ecs",
 	Long: `
 Presently, there is no support for attaching the ecs service to ALB. ALB will be supported shortly. 
@@ -57,7 +57,7 @@ The value of <size> parameter is t-shirt sized.
 	--cluster Development \
 	-e NAME=web \
 	-e URLPREFIX=foo-svc.example.com/`,
-	Aliases: []string{"create"},
+	Aliases: []string{"create-service"},
 	Args:    cobra.MinimumNArgs(4),
 	Run: func(cmd *cobra.Command, args []string) {
 

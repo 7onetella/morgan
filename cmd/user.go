@@ -46,8 +46,8 @@ import (
 
 var userCmd = &cobra.Command{
 	Use:   "user [command]",
-	Short: "automation for users",
-	Long:  `automation for users`,
+	Short: "Automation for users",
+	Long:  `Automation for users`,
 }
 
 func init() {

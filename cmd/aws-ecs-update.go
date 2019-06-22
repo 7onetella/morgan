@@ -35,7 +35,7 @@ var ecsUpdateCmdTimeout int64
 var ecsUpdateCmdWaitForServiceStable bool
 
 var ecsUpdateCmd = &cobra.Command{
-	Use:   "update-service <service name> <docker tags>",
+	Use:   "update <service name> <docker tags>",
 	Short: "Updates ecs",
 	Long: `Updates ecs. You can specify --docker-tags or --desired-count. The usecase with docker tag would be deploying a new version. 
 The other usecase with desired count would be controlling migration to new version. For example, 
@@ -51,7 +51,7 @@ if dynamic router such as fabio is used, then the web traffic will be split 50 a
 the combination of dynamic routing and service update count can aid in safe deployment.
 `,
 	Example: "foo-svc 1.0.0 --cluster api-cluster",
-	Aliases: []string{"update"},
+	Aliases: []string{"update-service"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

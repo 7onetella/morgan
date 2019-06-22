@@ -32,11 +32,11 @@ import (
 var ec2DescribeCmdName string
 
 var ec2DescribeCmd = &cobra.Command{
-	Use:     "describe-instances",
+	Use:     "describe",
 	Short:   "Describes ec2 instances",
 	Long:    `Describes ec2 instances`,
 	Example: "",
-	Aliases: []string{"describe"},
+	Aliases: []string{"describe-instances"},
 	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 

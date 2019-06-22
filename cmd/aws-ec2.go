@@ -27,8 +27,8 @@ import (
 // ec2Cmd represents the ec2 command
 var ec2Cmd = &cobra.Command{
 	Use:   "ec2",
-	Short: "automation for ec2",
-	Long:  `automation for ec2`,
+	Short: "Automation for ec2",
+	Long:  `Automation for ec2`,
 }
 
 func init() {

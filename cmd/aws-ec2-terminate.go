@@ -33,6 +33,7 @@ var ec2TerminateCmd = &cobra.Command{
 	Short:   "Terminates ec2",
 	Long:    `Terminates ec2`,
 	Example: "nginx redis",
+	Aliases: []string{"terminate-instances"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

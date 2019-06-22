@@ -36,6 +36,7 @@ var ecsStopCmd = &cobra.Command{
 	Short:   "Stops ecs",
 	Long:    `Stops ecs`,
 	Example: "foo-svc -c api-cluster",
+	Aliases: []string{"stop-services"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

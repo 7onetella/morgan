@@ -29,8 +29,8 @@ import (
 
 var ecsCmd = &cobra.Command{
 	Use:   "ecs",
-	Short: "automation for ecs",
-	Long:  `automation for ecs`,
+	Short: "Automation for ecs",
+	Long:  `Automation for ecs`,
 }
 
 func init() {

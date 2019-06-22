@@ -34,6 +34,7 @@ var ec2StartCmd = &cobra.Command{
 	Short:   "Starts ec2",
 	Long:    `Starts ec2`,
 	Example: "start nginx redis",
+	Aliases: []string{"start-instances"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

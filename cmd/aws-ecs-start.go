@@ -37,6 +37,7 @@ var ecsStartCmd = &cobra.Command{
 	Short:   "Starts ecs",
 	Long:    `Starts ecs`,
 	Example: "foo-svc -c api-cluster",
+	Aliases: []string{"start-services"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 

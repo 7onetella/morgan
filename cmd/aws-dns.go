@@ -27,8 +27,8 @@ import (
 // dnsCmd represents the dns command
 var dnsCmd = &cobra.Command{
 	Use:   "dns",
-	Short: "automation for route53",
-	Long:  `automation for route53`,
+	Short: "Automation for route53",
+	Long:  `Automation for route53`,
 }
 
 func init() {

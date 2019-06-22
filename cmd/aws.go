@@ -26,8 +26,8 @@ import (
 
 var awsCmd = &cobra.Command{
 	Use:   "aws",
-	Short: "automation for AWS",
-	Long:  `automation for AWS`,
+	Short: "Automation for AWS",
+	Long:  `Automation for AWS`,
 }
 
 func init() {

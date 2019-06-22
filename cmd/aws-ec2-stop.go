@@ -34,6 +34,7 @@ var ec2StopCmd = &cobra.Command{
 	Short:   "Stops ec2",
 	Long:    `Stops ec2`,
 	Example: "stop nginx redis",
+	Aliases: []string{"stop-instances"},
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
