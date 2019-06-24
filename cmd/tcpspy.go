@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -42,9 +42,9 @@ var tcpSpyCmd = &cobra.Command{
 
 		fmt.Println()
 
-		address1 := args[0]
+		// address1 := args[0]
 
-		l, err := net.Listen("tcp", "localhost:5000")
+		l, err := net.Listen("tcp", "localhost:10211")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -58,7 +58,7 @@ var tcpSpyCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
-			go handleRequest(conn, address1)
+			go listen(conn)
 		}
 
 	},
@@ -77,42 +77,18 @@ func init() {
 	}
 }
 
-func handleRequest(conn net.Conn, addr1 string) {
-	logger.Println("start of communication")
-	defer conn.Close()
-
-	upstream, err := dialTCP(addr1)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer upstream.Close()
-
-	// sending input to upstream. don't block here, do async
-	var w io.Writer
-	w = upstream
-	go io.Copy(w, conn)
-
-	defer logger.Println("end of communication") // the following blocks
-
-	// Block and send server response downstream
-	// send downstream : sending output to downstream
+func listen(conn net.Conn) {
 	for {
-		upstream.SetReadDeadline(time.Now().Add(time.Duration(tcpSpyCmdRemoteTimeout) * time.Second))
 		var buf [128]byte
-		n, err := upstream.Read(buf[:])
+		n, err := conn.Read(buf[:])
 		if err != nil {
 			logger.Printf("upstream %d bytes copied, err = %v", n, err)
 			return
 		}
 
 		// intercept and do something
-		log.Print(string(buf[:n]))
-
-		_, err = conn.Write(buf[:n])
-		if err != nil {
-			logger.Println(err)
-		}
+		hexStr := hex.Dump(buf[:n])
+		log.Print(hexStr)
 	}
 }
 
