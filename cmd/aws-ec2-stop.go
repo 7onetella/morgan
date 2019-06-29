@@ -22,11 +22,14 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/7onetella/morgan/tools/awsapi/ec2w"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
+
+var ec2StopCmdTag string
 
 // ec2StopCmd represents the start command
 var ec2StopCmd = &cobra.Command{
@@ -35,7 +38,7 @@ var ec2StopCmd = &cobra.Command{
 	Long:    `Stops ec2`,
 	Example: "stop nginx redis",
 	Aliases: []string{"stop-instances"},
-	Args:    cobra.MinimumNArgs(1),
+	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		Newline()
@@ -46,6 +49,37 @@ var ec2StopCmd = &cobra.Command{
 		instanceIDSlice := []string{}
 		for k := range instanceIDs {
 			instanceIDSlice = append(instanceIDSlice, k)
+		}
+
+		// retrieve ec2 instances by tagName:tagValue if specified
+		if len(ec2StopCmdTag) > 0 {
+
+			tokens := strings.Split(ec2StopCmdTag, ":")
+			if len(tokens) == 2 {
+				tagName := strings.TrimSpace(tokens[0])
+				tagValue := strings.TrimSpace(tokens[1])
+
+				result, err := ec2w.DescribeInstanceByTagAndValue(tagName, tagValue)
+				ExitOnError(err, "retrieving by tag name and tag value")
+
+				for _, r := range result.Reservations {
+					for _, i := range r.Instances {
+						instanceIDSlice = append(instanceIDSlice, *i.InstanceId)
+
+						for _, t := range i.Tags {
+							if *t.Key == "Name" {
+								instanceIDs[*i.InstanceId] = *t.Value
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// is there anything to stop
+		if len(instanceIDSlice) == 0 {
+			Failure("there is no ec2 instances to stop. check your parameters.")
+			return
 		}
 
 		resp, err := ec2w.StopInstances(instanceIDSlice)
@@ -62,5 +96,11 @@ var ec2StopCmd = &cobra.Command{
 }
 
 func init() {
+
 	ec2Cmd.AddCommand(ec2StopCmd)
+
+	flags := ec2StopCmd.Flags()
+
+	flags.StringVar(&ec2StopCmdTag, "tag", "", "optional: ec2 tag")
+
 }

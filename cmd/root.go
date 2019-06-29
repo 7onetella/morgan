@@ -62,7 +62,7 @@ var rootCmd = &cobra.Command{
 		case "info":
 			logLevel = INFO
 		default:
-			logLevel = NONE
+			logLevel = 0
 		}
 
 		return nil
@@ -164,11 +164,11 @@ func ExitOnError(err error, action string) {
 // ExitOn exits when error occurs
 func ExitOn(err error) {
 	if err != nil {
-		Println(red(indentation + xmark))
-		if logLevel == DEBUG {
-			Print("\n")
-			IndentRed(err.Error())
-		}
+		// if logLevel == DEBUG {
+		Print(red(indentation + xmark + err.Error()))
+		Print("\n")
+		// IndentRed(err.Error())
+		// }
 		os.Exit(1)
 	}
 }
